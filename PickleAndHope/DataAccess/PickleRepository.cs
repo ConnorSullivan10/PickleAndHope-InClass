@@ -18,6 +18,8 @@ namespace PickleAndHope.DataAccess
             }
         };
 
+        const string ConnectionString = "Server=localhost; Database = PickleAndHope; Trusted_Connection = True;";
+
         public void Add(Pickle pickle)
         {
             pickle.Id = _pickles.Max(x => x.Id) + 1;
@@ -37,19 +39,41 @@ namespace PickleAndHope.DataAccess
             return pickleToUpdate;
         }
 
-        public Pickle GetByType (string type)
+        public Pickle GetByType (string typeOfPickle)
         {
-            return _pickles.FirstOrDefault(p => p.Type == type);
-        }
+            //Sql Connection
+            using (var connection = new SqlConnection(ConnectionString))
+            {
+
+                    connection.Open();
+
+                    var query = @"select *
+                                from Pickle
+                                where Type = '@Type'";
+
+                    //Sql Command
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = query;
+                    cmd.Parameters.AddWithValue("Type", typeOfPickle);
+                    
+                    //execute the command
+                    var reader = cmd.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                    var pickle = MapReaderToPickle(reader);
+
+                        return pickle;
+                    }
+                    return null;
+                }
+            }
 
         public List<Pickle> GetAll()
         {
 
-            //Connection String
-            var connectionString = "Server=localhost; Database = PickleAndHope; Trusted_Connection = True;";
-
             //Sql Connection
-            var connection = new SqlConnection(connectionString);
+            var connection = new SqlConnection(ConnectionString);
             connection.Open();
 
             //Sql Command
@@ -66,14 +90,7 @@ namespace PickleAndHope.DataAccess
             {
                 var id = (int)reader["Id"];
                 var type = (string)reader["Type"];
-                var pickle = new Pickle
-                {
-                    Id = (int)reader["Id"],
-                    Type = (string)reader["Type"],
-                    Price = (decimal)reader["Price"],
-                    NumberInStock = (int)reader["NumberInStock"],
-                    Size = (string)reader["Size"]
-                };
+                var pickle = MapReaderToPickle(reader);
 
                 pickles.Add(pickle);
             }
@@ -86,7 +103,43 @@ namespace PickleAndHope.DataAccess
 
         public Pickle GetById(int id)
         {
-            return _pickles.FirstOrDefault(pickle => pickle.Id == id);
+            //return _pickles.FirstOrDefault(pickle => pickle.Id == id);
+
+            using (var connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+
+                var cmd = connection.CreateCommand();
+                var query = @"
+                            select *
+                            from Pickle
+                            where id = @id";
+
+                cmd.CommandText = query;
+                cmd.Parameters.AddWithValue("id", id);
+
+                var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    return MapReaderToPickle(reader);
+                }
+                return null;
+            }
+        }
+
+        Pickle MapReaderToPickle(SqlDataReader reader)
+        {
+            var pickle = new Pickle
+            {
+                Id = (int)reader["Id"],
+                Type = (string)reader["Type"],
+                Price = (decimal)reader["Price"],
+                NumberInStock = (int)reader["NumberInStock"],
+                Size = (string)reader["Size"]
+            };
+
+            return pickle;
         }
     }
 }
