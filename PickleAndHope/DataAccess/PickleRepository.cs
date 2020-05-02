@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using PickleAndHope.Models;
@@ -43,7 +44,44 @@ namespace PickleAndHope.DataAccess
 
         public List<Pickle> GetAll()
         {
-            return _pickles;
+
+            //Connection String
+            var connectionString = "Server=localhost; Database = PickleAndHope; Trusted_Connection = True;";
+
+            //Sql Connection
+            var connection = new SqlConnection(connectionString);
+            connection.Open();
+
+            //Sql Command
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "select * from pickle";
+
+            //sql data reader
+            var reader = cmd.ExecuteReader();
+
+            var pickles = new List<Pickle>();
+
+            //Map results to c# things
+            while (reader.Read())
+            {
+                var id = (int)reader["Id"];
+                var type = (string)reader["Type"];
+                var pickle = new Pickle
+                {
+                    Id = (int)reader["Id"],
+                    Type = (string)reader["Type"],
+                    Price = (decimal)reader["Price"],
+                    NumberInStock = (int)reader["NumberInStock"],
+                    Size = (string)reader["Size"]
+                };
+
+                pickles.Add(pickle);
+            }
+
+            connection.Close();
+
+            return pickles;
+
         }
 
         public Pickle GetById(int id)
