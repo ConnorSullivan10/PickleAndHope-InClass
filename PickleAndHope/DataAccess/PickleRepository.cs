@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using PickleAndHope.Models;
 
 namespace PickleAndHope.DataAccess
@@ -29,26 +30,29 @@ namespace PickleAndHope.DataAccess
                         output inserted.*
                         values(@NumberInStock, @Price, @Size, @Type)";
 
-            using (var connection = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(ConnectionString))
             {
-                connection.Open();
+                var result = db.QueryFirstOrDefault<Pickle>(sql, pickle);
+                return result;
 
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = sql;
+                //db.Open();
 
-                cmd.Parameters.AddWithValue("NumberInStock", pickle.NumberInStock);
-                cmd.Parameters.AddWithValue("Price", pickle.Price);
-                cmd.Parameters.AddWithValue("Size", pickle.Size);
-                cmd.Parameters.AddWithValue("Type", pickle.Type);
+                //var cmd = db.CreateCommand();
+                //cmd.CommandText = sql;
 
-                var reader = cmd.ExecuteReader();
+                //cmd.Parameters.AddWithValue("NumberInStock", pickle.NumberInStock);
+                //cmd.Parameters.AddWithValue("Price", pickle.Price);
+                //cmd.Parameters.AddWithValue("Size", pickle.Size);
+                //cmd.Parameters.AddWithValue("Type", pickle.Type);
 
-                if (reader.Read())
-                {
-                    var newPickle = MapReaderToPickle(reader);
-                    return newPickle;
-                }
-                return null;
+                //var reader = cmd.ExecuteReader();
+
+                //if (reader.Read())
+                //{
+                //    var newPickle = MapReaderToPickle(reader);
+                //    return newPickle;
+                //}
+                //return null;
             }
 
         }
@@ -67,26 +71,35 @@ namespace PickleAndHope.DataAccess
 
             var sql = @"update Pickle
                         set NumberInStock = NumberInStock + @NewStock
+                        output inserted.*
                         where Id = @Id";
 
-            using (var connection = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(ConnectionString))
             {
-                connection.Open();
-
-                var cmd = connection.CreateCommand();
-                cmd.CommandText = sql;
-
-                cmd.Parameters.AddWithValue("NewStock", pickle.NumberInStock);
-                cmd.Parameters.AddWithValue("Id", pickle.Id);
-
-                var reader = cmd.ExecuteReader();
-                if (reader.Read())
+                var parameters = new
                 {
-                    var updatedPickle = MapReaderToPickle(reader);
+                    NewStock = pickle.NumberInStock,
+                    Id = pickle.Id
+                };
 
-                    return updatedPickle;
-                }
-                return null;
+                return db.QueryFirstOrDefault<Pickle>(sql, parameters);
+
+                //connection.Open();
+
+                //var cmd = connection.CreateCommand();
+                //cmd.CommandText = sql;
+
+                //cmd.Parameters.AddWithValue("NewStock", pickle.NumberInStock);
+                //cmd.Parameters.AddWithValue("Id", pickle.Id);
+
+                //var reader = cmd.ExecuteReader();
+                //if (reader.Read())
+                //{
+                //    var updatedPickle = MapReaderToPickle(reader);
+
+                //    return updatedPickle;
+                //}
+                //return null;
             }
 
 
@@ -94,63 +107,72 @@ namespace PickleAndHope.DataAccess
 
         public Pickle GetByType (string typeOfPickle)
         {
-            //Sql Connection
-            using (var connection = new SqlConnection(ConnectionString))
-            {
-
-                    connection.Open();
-
-                    var query = @"select *
+            var query = @"select *
                                 from Pickle
                                 where Type = '@Type'";
 
-                    //Sql Command
-                    var cmd = connection.CreateCommand();
-                    cmd.CommandText = query;
-                    cmd.Parameters.AddWithValue("Type", typeOfPickle);
+            //Sql Connection
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                var parameters = new { Type = typeOfPickle };
+
+                var pickle = db.QueryFirstOrDefault<Pickle>(query, parameters);
+
+                return pickle;
+            //        connection.Open();
+
+
+            //        //Sql Command
+            //        var cmd = connection.CreateCommand();
+            //        cmd.CommandText = query;
+            //        cmd.Parameters.AddWithValue("Type", typeOfPickle);
                     
-                    //execute the command
-                    var reader = cmd.ExecuteReader();
+            //        //execute the command
+            //        var reader = cmd.ExecuteReader();
 
-                    if (reader.Read())
-                    {
-                    var pickle = MapReaderToPickle(reader);
+            //        if (reader.Read())
+            //        {
+            //        var pickle = MapReaderToPickle(reader);
 
-                        return pickle;
-                    }
-                    return null;
+            //            return pickle;
+            //        }
+            //        return null;
                 }
             }
 
-        public List<Pickle> GetAll()
+        public IEnumerable<Pickle> GetAll()
         {
-
-            //Sql Connection
-            var connection = new SqlConnection(ConnectionString);
-            connection.Open();
-
-            //Sql Command
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = "select * from pickle";
-
-            //sql data reader
-            var reader = cmd.ExecuteReader();
-
-            var pickles = new List<Pickle>();
-
-            //Map results to c# things
-            while (reader.Read())
+            using (var db = new SqlConnection(ConnectionString))
             {
-                var id = (int)reader["Id"];
-                var type = (string)reader["Type"];
-                var pickle = MapReaderToPickle(reader);
-
-                pickles.Add(pickle);
+                return db.Query<Pickle>("select * from pickle");
             }
 
-            connection.Close();
+            ////Sql Connection
+            //var connection = new SqlConnection(ConnectionString);
+            //connection.Open();
 
-            return pickles;
+            ////Sql Command
+            //var cmd = connection.CreateCommand();
+            //cmd.CommandText = "select * from pickle";
+
+            ////sql data reader
+            //var reader = cmd.ExecuteReader();
+
+            //var pickles = new List<Pickle>();
+
+            ////Map results to c# things
+            //while (reader.Read())
+            //{
+            //    var id = (int)reader["Id"];
+            //    var type = (string)reader["Type"];
+            //    var pickle = MapReaderToPickle(reader);
+
+            //    pickles.Add(pickle);
+            //}
+
+            //connection.Close();
+
+            //return pickles;
 
         }
 
@@ -158,26 +180,36 @@ namespace PickleAndHope.DataAccess
         {
             //return _pickles.FirstOrDefault(pickle => pickle.Id == id);
 
-            using (var connection = new SqlConnection(ConnectionString))
+            var query = @"select *
+                          from Pickle
+                          where id = @id";
+
+            using (var db = new SqlConnection(ConnectionString))
             {
-                connection.Open();
+                // below is anonymous type for single use in this function
+                var parameters = new { Id = id };
 
-                var cmd = connection.CreateCommand();
-                var query = @"
-                            select *
-                            from Pickle
-                            where id = @id";
+                var pickle = db.QueryFirstOrDefault<Pickle>(query, parameters);
+                return pickle;
 
-                cmd.CommandText = query;
-                cmd.Parameters.AddWithValue("id", id);
+                //connection.Open();
 
-                var reader = cmd.ExecuteReader();
+                //var cmd = connection.CreateCommand();
+                //var query = @"
+                //            select *
+                //            from Pickle
+                //            where id = @id";
 
-                if (reader.Read())
-                {
-                    return MapReaderToPickle(reader);
-                }
-                return null;
+                //cmd.CommandText = query;
+                //cmd.Parameters.AddWithValue("id", id);
+
+                //var reader = cmd.ExecuteReader();
+
+                //if (reader.Read())
+                //{
+                //    return MapReaderToPickle(reader);
+                //}
+                //return null;
             }
         }
 
