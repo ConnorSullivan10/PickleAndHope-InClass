@@ -15,6 +15,11 @@ namespace PickleAndHope.Controllers
     {
         PickleRepository _repository = new PickleRepository();
 
+        public PicklesController(PickleRepository repository)
+        {
+            _repository = repository;
+        }
+
         // api/pickles
         [HttpPost]
         public IActionResult AddPickle(Pickle pickleToAdd)
@@ -22,8 +27,8 @@ namespace PickleAndHope.Controllers
             var existingPickle = _repository.GetByType(pickleToAdd.Type);
             if (existingPickle == null)
             {
-                _repository.Add(pickleToAdd);
-                return Created("", pickleToAdd);
+                var newPickle = _repository.Add(pickleToAdd);
+                return Created("", newPickle);
             }
             else
             {
@@ -49,6 +54,17 @@ namespace PickleAndHope.Controllers
             var pickle = _repository.GetById(id);
 
             if (pickle == null) return NotFound("No pickle with that id could be found.");
+
+            return Ok(pickle);
+        }
+
+        // api/pickles/type/dill
+        [HttpGet("/type/{type}")]
+        public IActionResult GetPickleByType(string type)
+        {
+            var pickle = _repository.GetByType(type);
+
+            if (pickle == null) return NotFound("No pickle with that type exists");
 
             return Ok(pickle);
         }
