@@ -4,22 +4,30 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 using PickleAndHope.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace PickleAndHope.DataAccess
 {
     public class PickleRepository
     {
-        static List<Pickle> _pickles = new List<Pickle> { 
-            new Pickle 
-            { 
-                Type = "Bread and Butter", 
-                NumberInStock = 5,
-                Id = 1
-            }
-        };
+        //static List<Pickle> _pickles = new List<Pickle> { 
+        //    new Pickle 
+        //    { 
+        //        Type = "Bread and Butter", 
+        //        NumberInStock = 5,
+        //        Id = 1
+        //    }
+        //};
 
-        const string ConnectionString = "Server=localhost; Database = PickleAndHope; Trusted_Connection = True;";
+        string ConnectionString;
+        
+        public PickleRepository(IConfiguration config)
+        {
+            ConnectionString = config.GetConnectionString("PickleAndHope");
+            //ConnectionString = config.GetSection("ConnectionStrings")["PickleAndHope"];
+        }
 
         public Pickle Add(Pickle pickle)
         {
@@ -107,6 +115,7 @@ namespace PickleAndHope.DataAccess
 
         public Pickle GetByType (string typeOfPickle)
         {
+            //string interpolation
             var query = @"select *
                                 from Pickle
                                 where Type = '@Type'";
@@ -119,6 +128,8 @@ namespace PickleAndHope.DataAccess
                 var pickle = db.QueryFirstOrDefault<Pickle>(query, parameters);
 
                 return pickle;
+        //ADO.NET Equivalent=
+
             //        connection.Open();
 
 
@@ -163,6 +174,7 @@ namespace PickleAndHope.DataAccess
             ////Map results to c# things
             //while (reader.Read())
             //{
+            // ***below code in parentheses is called direct casting
             //    var id = (int)reader["Id"];
             //    var type = (string)reader["Type"];
             //    var pickle = MapReaderToPickle(reader);
