@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using PickleAndHope.Models;
-using Microsoft.Extensions.Configuration;
 
 namespace PickleAndHope.DataAccess
 {

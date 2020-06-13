@@ -28,6 +28,12 @@ namespace PickleAndHope
         {
             services.AddControllers();
 
+            //below code is not particularly useful in production
+            services.AddCors(options =>
+                options.AddPolicy("ItsAllGood",
+                    builder => builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin())
+                );
+
             services.AddTransient<PickleRepository>();
             // services.AddScoped<>();
             services.AddSingleton<IConfiguration>(Configuration);
@@ -45,6 +51,8 @@ namespace PickleAndHope
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors("ItsAllGood");
 
             app.UseAuthorization();
 
